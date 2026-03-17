@@ -6,7 +6,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 import sqlite3
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 import config
 import threading
@@ -268,6 +268,7 @@ def login():
     if request.method == 'POST':
         student_id = request.form.get('student_id')
         password = request.form.get('password')
+        remember = request.form.get('remember') == 'on'
         
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -281,6 +282,12 @@ def login():
         if student:
             session['student_id'] = student['student_id']
             session['student_name'] = student['name']
+            
+            # 设置会话过期时间
+            if remember:
+                session.permanent = True
+                app.permanent_session_lifetime = timedelta(days=7)
+            
             return redirect(url_for('dashboard'))
         else:
             return render_template('login.html', error='学号或密码错误')

@@ -70,6 +70,24 @@
             border-color: #2563eb;
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .remember-me input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #2563eb;
+        }
+        .remember-me label {
+            color: #64748b;
+            font-size: 0.95rem;
+            cursor: pointer;
+            user-select: none;
+        }
         .btn-login {
             width: 100%;
             padding: 0.875rem;
@@ -146,6 +164,11 @@
                     <label for="password" style="display: block; font-weight: 600; color: #334155; margin-bottom: 0.5rem;">密码</label>
                     <input type="password" class="form-input" id="password" name="password" 
                            placeholder="请输入密码" required>
+                </div>
+                
+                <div class="remember-me">
+                    <input type="checkbox" id="remember" name="remember">
+                    <label for="remember">记住我（7 天内自动登录）</label>
                 </div>
                 
                 <button type="submit" class="btn-login">

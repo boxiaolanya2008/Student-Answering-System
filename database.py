@@ -35,7 +35,7 @@ def init_database():
         )
     ''')
     
-    # 插入示例学生数据
+    # 插入示例学生数据（仅用于测试）
     sample_students = [
         ('2024001', '123456', '张三'),
         ('2024002', '123456', '李四'),
@@ -52,21 +52,7 @@ def init_database():
         except sqlite3.IntegrityError:
             pass  # 如果已存在则跳过
     
-    # 插入示例作业数据
-    sample_assignments = [
-        ('2024001', '数学作业 - 第一章', 'uploads/sample1.jpg', '待批改', 'pending'),
-        ('2024001', '英语作业 - Unit 1', 'uploads/sample2.jpg', '待批改', 'pending'),
-        ('2024002', '数学作业 - 第二章', 'uploads/sample3.jpg', '待批改', 'pending'),
-    ]
-    
-    for student_id, title, image_path, ai_result, status in sample_assignments:
-        try:
-            cursor.execute('''
-                INSERT INTO assignments (student_id, title, image_path, ai_result, status)
-                VALUES (?, ?, ?, ?, ?)
-            ''', (student_id, title, image_path, ai_result, status))
-        except sqlite3.IntegrityError:
-            pass  # 如果已存在则跳过
+    # 注意：不再插入示例作业数据，保持数据库干净
     
     conn.commit()
     conn.close()
