@@ -36,6 +36,9 @@ class AIGradingQueue:
         self.max_daily_tokens = 10000  # 每日 token 限制
         self.daily_token_reset_time = None
         self.lock = threading.Lock()
+        # 用于存储实时流式结果的字典 {assignment_id: result_text}
+        self.streaming_results = {}
+        self.result_lock = threading.Lock()
         
     def add_task(self, assignment_id, image_path, title):
         """添加批改任务到队列"""
@@ -147,15 +150,29 @@ class AIGradingQueue:
                     ai_result_stream = get_ai_result_stream(task['image_path'], task['title'])
                     
                     full_result = ""
+                    last_db_update_time = time.time()
+                    
                     for chunk in ai_result_stream:
                         if chunk:
                             full_result += chunk
-                            # 实时更新数据库中的部分结果
-                            task['result'] = full_result
-                            self._update_partial_result(task)
+                            # 实时更新内存中的结果（供 SSE 读取）
+                            with self.result_lock:
+                                self.streaming_results[task['assignment_id']] = full_result
+                            
+                            # 每 0.5 秒更新一次数据库（避免过于频繁）
+                            current_time = time.time()
+                            if current_time - last_db_update_time >= 0.5:
+                                task['result'] = full_result
+                                self._update_partial_result(task)
+                                last_db_update_time = current_time
                     
+                    # 确保最终结果写入数据库
                     task['status'] = 'completed'
                     task['result'] = full_result
+                    with self.result_lock:
+                        self.streaming_results[task['assignment_id']] = full_result
+                    self._update_partial_result(task)
+                    
                     task['token_used'] = len(task['title']) * 100 + len(full_result) * 0.5  # 估算 token 使用
                     
                     with self.lock:
@@ -165,6 +182,10 @@ class AIGradingQueue:
                 except Exception as e:
                     task['status'] = 'failed'
                     task['result'] = f'批改失败：{str(e)}'
+                    # 清除流式结果
+                    with self.result_lock:
+                        if task['assignment_id'] in self.streaming_results:
+                            del self.streaming_results[task['assignment_id']]
                 
                 task['completed_at'] = datetime.now()
                 self._update_database(task)
@@ -567,15 +588,21 @@ def delete_assignment(assignment_id):
 @app.route('/stream-ai-result/<int:assignment_id>')
 @login_required
 def stream_ai_result(assignment_id):
-    """流式输出 AI 批改结果（SSE）"""
+    """流式输出 AI 批改结果（SSE）- 支持真正的实时推送"""
     from flask import Response
+    import json
     
     def generate():
         conn = get_db_connection()
         cursor = conn.cursor()
+        last_sent_result = ""
         
         while True:
-            # 查询作业状态和结果
+            # 先从内存中获取实时结果（更快）
+            with ai_queue.result_lock:
+                streaming_result = ai_queue.streaming_results.get(assignment_id, None)
+            
+            # 查询作业状态
             cursor.execute('''
                 SELECT status, ai_result FROM assignments WHERE id = ?
             ''', (assignment_id,))
@@ -585,17 +612,24 @@ def stream_ai_result(assignment_id):
                 yield f"data: {{\"error\": \"作业不存在\"}}\n\n"
                 break
             
-            # 发送当前状态
-            result_str = assignment['ai_result'] if assignment['ai_result'] else 'null'
-            import json
-            yield f"data: {{\"status\": \"{assignment['status']}\", \"result\": {json.dumps(result_str)}}}\n\n"
+            # 优先使用内存中的流式结果，否则使用数据库中的结果
+            current_result = streaming_result if streaming_result is not None else assignment['ai_result']
+            result_str = current_result if current_result else 'null'
+            
+            # 只有当结果发生变化时才发送（减少网络流量）
+            if result_str != last_sent_result:
+                yield f"data: {{\"status\": \"{assignment['status']}\", \"result\": {json.dumps(result_str)}}}\n\n"
+                last_sent_result = result_str
             
             # 如果已完成或失败，停止推送
             if assignment['status'] in ['completed', 'failed']:
+                # 最后一次确保发送完整结果
+                if result_str != last_sent_result:
+                    yield f"data: {{\"status\": \"{assignment['status']}\", \"result\": {json.dumps(result_str)}}}\n\n"
                 break
             
-            # 每秒检查一次
-            time.sleep(1)
+            # 每 0.3 秒检查一次（更快的响应速度）
+            time.sleep(0.3)
         
         conn.close()
     

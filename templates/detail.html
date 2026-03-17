@@ -316,8 +316,8 @@
                         // AI 正在批改中，实时显示部分结果
                         statusDiv.textContent = 'AI 正在批改中...';
                         
-                        // 如果有部分结果，立即开始流式显示
-                        if (data.result && data.result !== 'null') {
+                        // 只要有结果就立即显示
+                        if (data.result && data.result !== 'null' && data.result.length > 0) {
                             const streamingDiv = document.getElementById('streamingResult');
                             streamingDiv.style.display = 'block';
                             streamingDiv.textContent = data.result;
