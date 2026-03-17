@@ -5,6 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ assignment['title'] }} - 作业详情</title>
     <link href="/static/css/theme.css" rel="stylesheet">
+    <!-- MathJax 用于渲染数学公式 -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        // 配置 MathJax
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true,
+                processEnvironments: true
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+            }
+        };
+    </script>
     <style>
         body {
             background-color: #f8fafc;
@@ -219,6 +236,8 @@
                                 <span style="color: #92400e; font-size: 0.9rem;">如果长时间未显示结果，请刷新页面试试。AI 批改需要一定时间，请耐心等待。</span>
                             </div>
                         </div>
+                        <!-- 流式输出显示区域 -->
+                        <div id="streamingResult" class="result-content" style="display: none; min-height: 200px;"></div>
                         <div id="aiResult" class="result-content" style="display: none;"></div>
                     {% endif %}
                 </div>
@@ -227,11 +246,39 @@
     </div>
 
     <script>
-        // 流式接收 AI 批改结果（SSE）
+        // 流式接收 AI 批改结果（SSE）+ 逐字输出效果
         const assignmentId = {{ assignment['id'] }};
         const hasResult = {{ 'true' if assignment['ai_result'] else 'false' }};
         
         console.log('初始化 SSE - Assignment ID:', assignmentId, 'Has Result:', hasResult);
+        
+        // 逐字输出函数
+        let typeWriterInterval = null;
+        function typeWriter(text, elementId, speed = 50) {
+            let i = 0;
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            // 清除之前的定时器
+            if (typeWriterInterval) {
+                clearInterval(typeWriterInterval);
+            }
+            
+            element.style.display = 'block';
+            element.textContent = '';
+            
+            typeWriterInterval = setInterval(() => {
+                if (i < text.length) {
+                    element.textContent += text.charAt(i);
+                    i++;
+                    // 自动滚动到底部
+                    element.scrollTop = element.scrollHeight;
+                } else {
+                    clearInterval(typeWriterInterval);
+                    typeWriterInterval = null;
+                }
+            }, speed);
+        }
         
         if (!hasResult) {
             const eventSource = new EventSource(`/stream-ai-result/${assignmentId}`);
@@ -256,29 +303,71 @@
                     }
                     
                     const loadingDiv = document.getElementById('aiLoading');
+                    const streamingDiv = document.getElementById('streamingResult');
                     const resultDiv = document.getElementById('aiResult');
                     const statusDiv = document.getElementById('loadingStatus');
                     
-                    // 更新状态提示
+                    // 更新状态提示并开始流式输出
                     if (data.status === 'pending') {
                         statusDiv.textContent = '正在加入队列...';
                     } else if (data.status === 'queued') {
                         statusDiv.textContent = '正在排队等待批改...';
                     } else if (data.status === 'processing') {
-                        statusDiv.textContent = 'AI 正在批改中，请稍候...';
+                        // AI 正在批改中，实时显示部分结果
+                        statusDiv.textContent = 'AI 正在批改中...';
+                        
+                        // 如果有部分结果，立即开始流式显示
+                        if (data.result && data.result !== 'null') {
+                            const streamingDiv = document.getElementById('streamingResult');
+                            streamingDiv.style.display = 'block';
+                            streamingDiv.textContent = data.result;
+                            // 自动滚动到底部
+                            streamingDiv.scrollTop = streamingDiv.scrollHeight;
+                            
+                            // 重新渲染数学公式
+                            if (window.MathJax) {
+                                MathJax.typesetPromise([streamingDiv]).catch((err) => console.log('MathJax 渲染错误:', err));
+                            }
+                        }
                     } else if (data.status === 'completed') {
                         console.log('批改完成！结果:', data.result);
-                        // 批改完成，显示结果
+                        // 批改完成，隐藏加载提示，显示完整结果
                         loadingDiv.style.display = 'none';
-                        resultDiv.style.display = 'block';
-                        resultDiv.textContent = data.result || '批改完成';
+                        
+                        // 使用逐字输出效果显示最终结果（如果还没有显示）
+                        if (data.result && data.result !== 'null') {
+                            const streamingDiv = document.getElementById('streamingResult');
+                            streamingDiv.style.display = 'block';
+                            
+                            // 如果已经有部分内容，直接显示完整的；否则逐字显示
+                            if (streamingDiv.textContent.length === 0) {
+                                typeWriter(data.result, 'streamingResult', 30); // 30ms 一个字
+                                // 逐字完成后渲染公式
+                                setTimeout(() => {
+                                    if (window.MathJax) {
+                                        MathJax.typesetPromise([streamingDiv]).catch((err) => console.log('MathJax 渲染错误:', err));
+                                    }
+                                }, 100);
+                            } else {
+                                // 更新为最终完整结果
+                                streamingDiv.textContent = data.result;
+                                // 渲染公式
+                                if (window.MathJax) {
+                                    MathJax.typesetPromise([streamingDiv]).catch((err) => console.log('MathJax 渲染错误:', err));
+                                }
+                            }
+                        } else {
+                            resultDiv.style.display = 'block';
+                            resultDiv.textContent = '批改完成';
+                        }
+                        
                         eventSource.close();
                         console.log('SSE 连接已关闭');
                         
-                        // 3 秒后自动刷新页面，确保显示最新状态
+                        // 2 秒后自动刷新页面，保存最终状态
                         setTimeout(function() {
                             location.reload();
-                        }, 3000);
+                        }, 2000);
                     } else if (data.status === 'failed') {
                         console.log('批改失败！错误:', data.result);
                         // 批改失败

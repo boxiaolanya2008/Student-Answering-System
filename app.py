@@ -110,7 +110,7 @@ class AIGradingQueue:
         return self.token_usage < self.max_daily_tokens
     
     def process_queue(self):
-        """处理队列中的任务"""
+        """处理队列中的任务（支持实时流式推送）"""
         while True:
             if not self.queue.empty() and not self.processing:
                 task = self.queue.get()
@@ -119,6 +119,16 @@ class AIGradingQueue:
                     self.processing = True
                     self.current_task = task
                     task['started_at'] = datetime.now()
+                    task['status'] = 'processing'  # 设置为处理中状态
+                
+                # 更新数据库状态为 processing
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                cursor.execute('''
+                    UPDATE assignments SET status = ? WHERE id = ?
+                ''', ('processing', task['assignment_id']))
+                conn.commit()
+                conn.close()
                 
                 # 检查 token 限制
                 if not self.check_token_limit():
@@ -131,13 +141,22 @@ class AIGradingQueue:
                         self.current_task = None
                     continue
                 
-                # 执行 AI 批改
+                # 执行 AI 批改并实时推送结果
                 try:
-                    ai_response = get_ai_result(task['image_path'], task['title'])
+                    # 使用生成器接收流式结果
+                    ai_result_stream = get_ai_result_stream(task['image_path'], task['title'])
                     
-                    task['status'] = 'completed' if ai_response['success'] else 'failed'
-                    task['result'] = ai_response['result']
-                    task['token_used'] = len(task['title']) * 100 + len(ai_response.get('result', '')) * 0.5  # 估算 token 使用
+                    full_result = ""
+                    for chunk in ai_result_stream:
+                        if chunk:
+                            full_result += chunk
+                            # 实时更新数据库中的部分结果
+                            task['result'] = full_result
+                            self._update_partial_result(task)
+                    
+                    task['status'] = 'completed'
+                    task['result'] = full_result
+                    task['token_used'] = len(task['title']) * 100 + len(full_result) * 0.5  # 估算 token 使用
                     
                     with self.lock:
                         self.token_usage += task['token_used']
@@ -155,6 +174,18 @@ class AIGradingQueue:
                     self.current_task = None
             
             time.sleep(1)  # 每秒检查一次
+    
+    def _update_partial_result(self, task):
+        """更新部分批改结果到数据库（用于流式输出）"""
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            UPDATE assignments 
+            SET ai_result = ?, status = ?
+            WHERE id = ?
+        ''', (task['result'], 'processing', task['assignment_id']))
+        conn.commit()
+        conn.close()
     
     def _update_database(self, task):
         """更新数据库中的批改结果"""
@@ -207,12 +238,14 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-def get_ai_result(image_path, title):
+def get_ai_result_stream(image_path, title):
     """
-    调用 Infini-AI API 进行批改
+    调用 Infini-AI API 进行批改 - 生成器版本（实时返回每个字）
     """
     import requests
     import base64
+    from requests.adapters import HTTPAdapter
+    from urllib3.util.retry import Retry
     
     # 检查是否配置了 AI_API_KEY
     if not config.AI_API_KEY or not config.AI_BASE_URL or not config.AI_MODEL:
@@ -227,7 +260,7 @@ def get_ai_result(image_path, title):
         prompt = f"""请批改这份学生作业：{title}
 请识别图片中的题目和学生答案，判断每道题是否正确，并给出：
 1. 每道题的判断结果 (正确/错误)
-2. 错误题目的正确答案
+2. 错误题目的正确答案（包含详细解题步骤）
 3. 总体评价
 4. 打分 (0-100)
 
@@ -236,13 +269,22 @@ def get_ai_result(image_path, title):
 - 使用简洁清晰的语言
 - 换行分隔不同部分
 - 可以使用简单的符号如 ✓ ✗ → 等
+- **重要**：数学公式必须使用 LaTeX 格式，用 $...$ 包裹（行内公式）或 $$...$$ 包裹（独立公式）
+- **重要**：不要省略计算步骤，要完整展示解题过程
 
-示例格式：
+（这都是）示例格式："
 【批改结果】
 
 第 1 题：正确 ✓
-第 2 题：错误 ✗ (正确答案应为 B)
-第 3 题：正确 ✓
+第 2 题：错误 ✗ 
+你的答案：A
+正确答案：B
+解析：根据公式 $E = mc^2$，其中 $m$ 是质量，$c$ 是光速。
+计算过程：
+$$F = ma = 5 \times 9.8 = 49N$$
+所以答案是 49N。
+
+第 3 题：正确 ✓"
 
 总体评价：完成良好，注意计算准确性。
 得分：「实际得分」"""
@@ -272,39 +314,76 @@ def get_ai_result(image_path, title):
                     ]
                 }
             ],
-            "stream": False
+            "stream": True  # 启用流式输出
         }
         
-        response = requests.post(
+        # 创建会话并配置重试策略
+        session = requests.Session()
+        retry_strategy = Retry(
+            total=3,
+            backoff_factor=1,
+            status_forcelist=[429, 500, 502, 503, 504],
+            allowed_methods=["POST"]
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        session.mount("https://", adapter)
+        session.mount("http://", adapter)
+        
+        # 增加超时时间并启用流式接收
+        response = session.post(
             f"{config.AI_BASE_URL}/chat/completions",
             json=payload,
             headers=headers,
-            timeout=60
+            timeout=(10, 180),  # 连接超时 10 秒，读取超时 180 秒
+            stream=True
         )
         
         if response.status_code == 200:
-            result = response.json()
-            ai_text = result['choices'][0]['message']['content']
-            
-            return {
-                'success': True,
-                'result': ai_text,
-                'score': None,
-                'provider': 'Infini-AI'
-            }
+            # 流式接收响应 - 实时 yield 每个字
+            for line in response.iter_lines():
+                if line:
+                    decoded_line = line.decode('utf-8')
+                    if decoded_line.startswith('data: '):
+                        data_str = decoded_line[6:]
+                        if data_str.strip() == '[DONE]':
+                            break
+                        try:
+                            import json
+                            data = json.loads(data_str)
+                            if 'choices' in data and len(data['choices']) > 0:
+                                delta = data['choices'][0].get('delta', {})
+                                content = delta.get('content', '')
+                                if content:
+                                    # 实时返回每个字符
+                                    yield content
+                        except json.JSONDecodeError:
+                            continue
         else:
             error_msg = f"API 请求失败：HTTP {response.status_code}"
             print(f"Error: {error_msg}")
             print(f"Response: {response.text}")
-            return {
-                'success': False,
-                'result': f'{error_msg}\n\n{response.text}',
-                'score': None,
-                'provider': 'Infini-AI'
-            }
+            raise Exception(error_msg)
             
     except Exception as e:
         print(f"AI 调用异常：{str(e)}")
+        raise
+
+def get_ai_result(image_path, title):
+    """
+    调用 Infini-AI API 进行批改（兼容旧版本，内部调用流式版本）
+    """
+    full_result = ""
+    try:
+        for chunk in get_ai_result_stream(image_path, title):
+            full_result += chunk
+        
+        return {
+            'success': True,
+            'result': full_result,
+            'score': None,
+            'provider': 'Infini-AI'
+        }
+    except Exception as e:
         return {
             'success': False,
             'result': f'AI 批改异常：{str(e)}',
