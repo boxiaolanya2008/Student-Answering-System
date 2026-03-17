@@ -307,7 +307,7 @@ def login():
         if student:
             session['student_id'] = student['student_id']
             session['student_name'] = student['name']
-            session['is_admin'] = (student_id == 'admin')  # 设置管理员权限
+            session['is_admin'] = (student_id == 'admin' and password == 'zzl2008')  # 管理员专属密码
             
             # 设置会话过期时间
             if remember:
@@ -494,6 +494,7 @@ def stream_ai_result(assignment_id):
         }
     )
 
+@app.route('/queue-status')
 @login_required
 def queue_status():
     """查看 AI 批改队列状态"""
