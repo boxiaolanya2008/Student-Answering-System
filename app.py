@@ -51,7 +51,8 @@ class AIGradingQueue:
             'token_used': 0
         }
         self.queue.put(task)
-        return len(self.queue)
+        # 估算队列长度（近似值）
+        return self.queue.qsize()
     
     def get_queue_status(self):
         """获取队列状态"""
@@ -177,11 +178,12 @@ def get_ai_result(image_path, title):
     调用 AI API 进行批改
     支持多种 AI 服务（当前配置优先使用 Infini-AI）
     """
+    import requests
+    import base64
+    
     # 检查是否配置了 AI_API_KEY（优先使用 Infini-AI）
     if config.AI_API_KEY and config.AI_BASE_URL and config.AI_MODEL:
         try:
-            import base64
-            
             # 读取图片并转为 base64
             with open(image_path, 'rb') as f:
                 image_base64 = base64.b64encode(f.read()).decode('utf-8')
@@ -262,8 +264,6 @@ def get_ai_result(image_path, title):
     # 使用百度 AI（备用方案）
     else:
         try:
-            import base64
-            
             # 读取图片并转为 base64
             with open(image_path, 'rb') as f:
                 image_base64 = base64.b64encode(f.read()).decode('utf-8')
