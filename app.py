@@ -307,6 +307,7 @@ def login():
         if student:
             session['student_id'] = student['student_id']
             session['student_name'] = student['name']
+            session['is_admin'] = (student_id == 'admin')  # 设置管理员权限
             
             # 设置会话过期时间
             if remember:
@@ -419,7 +420,80 @@ def uploaded_file(filename):
     """提供上传文件的访问"""
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-@app.route('/queue-status')
+@app.route('/delete/<int:assignment_id>', methods=['POST'])
+@login_required
+def delete_assignment(assignment_id):
+    """删除作业（仅管理员）"""
+    if not session.get('is_admin'):
+        return jsonify({'success': False, 'message': '权限不足'}), 403
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # 获取作业信息
+        cursor.execute('SELECT image_path FROM assignments WHERE id = ?', (assignment_id,))
+        assignment = cursor.fetchone()
+        
+        if assignment and assignment['image_path']:
+            # 删除图片文件
+            try:
+                os.remove(assignment['image_path'])
+            except FileNotFoundError:
+                pass
+        
+        # 删除数据库记录
+        cursor.execute('DELETE FROM assignments WHERE id = ?', (assignment_id,))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': '删除成功'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/stream-ai-result/<int:assignment_id>')
+@login_required
+def stream_ai_result(assignment_id):
+    """流式输出 AI 批改结果（SSE）"""
+    from flask import Response
+    
+    def generate():
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        while True:
+            # 查询作业状态和结果
+            cursor.execute('''
+                SELECT status, ai_result FROM assignments WHERE id = ?
+            ''', (assignment_id,))
+            assignment = cursor.fetchone()
+            
+            if not assignment:
+                yield f"data: {{\"error\": \"作业不存在\"}}\n\n"
+                break
+            
+            # 发送当前状态
+            result_str = assignment['ai_result'] if assignment['ai_result'] else None
+            yield f"data: {{\"status\": \"{assignment['status']}\", \"result\": {repr(result_str)}}}\n\n"
+            
+            # 如果已完成或失败，停止推送
+            if assignment['status'] in ['completed', 'failed']:
+                break
+            
+            # 每秒检查一次
+            time.sleep(1)
+        
+        conn.close()
+    
+    return Response(
+        generate(),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive'
+        }
+    )
+
 @login_required
 def queue_status():
     """查看 AI 批改队列状态"""

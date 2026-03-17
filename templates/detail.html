@@ -154,8 +154,13 @@
                 <div class="card-white">
                     <h3 class="card-title">作业图片</h3>
                     <div class="image-display-box">
-                        <img src="{{ url_for('uploaded_file', filename=assignment['image_path'].split('/')[-1]) }}" 
-                             alt="作业图片" class="homework-image">
+                        {% if assignment['image_path'] %}
+                            <img src="/uploads/{{ assignment['image_path'].split('\\')[-1].split('/')[-1] }}" 
+                                 alt="作业图片" class="homework-image"
+                                 onerror="this.onerror=null; this.src='/static/icons/document.svg';">
+                        {% else %}
+                            <img src="/static/icons/document.svg" alt="无图片" class="homework-image" style="max-width: 200px;">
+                        {% endif %}
                     </div>
                 </div>
                 
@@ -196,17 +201,76 @@
                     <h3 class="card-title">批改结果</h3>
                     
                     {% if assignment['ai_result'] %}
-                        <div class="result-content">
+                        <div id="aiResult" class="result-content">
                             {{ assignment['ai_result'] }}
                         </div>
                     {% else %}
-                        <div style="padding: 2rem; text-align: center; color: #94a3b8;">
-                            暂无批改结果
+                        <div id="aiLoading" style="padding: 2rem; text-align: center; color: #94a3b8;">
+                            <div style="font-size: 1.5rem; margin-bottom: 1rem;">⏳ AI 正在批改中...</div>
+                            <div id="loadingStatus" style="color: #64748b;">请稍候，结果将实时显示</div>
                         </div>
+                        <div id="aiResult" class="result-content" style="display: none;"></div>
                     {% endif %}
                 </div>
             </div>
         </div>
     </div>
+
+    <script>
+        // 流式接收 AI 批改结果（SSE）
+        const assignmentId = {{ assignment['id'] }};
+        const hasResult = {{ 'true' if assignment['ai_result'] else 'false' }};
+        
+        if (!hasResult) {
+            const eventSource = new EventSource(`/stream-ai-result/${assignmentId}`);
+            
+            eventSource.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.error) {
+                        document.getElementById('loadingStatus').textContent = '错误：' + data.error;
+                        eventSource.close();
+                        return;
+                    }
+                    
+                    const loadingDiv = document.getElementById('aiLoading');
+                    const resultDiv = document.getElementById('aiResult');
+                    const statusDiv = document.getElementById('loadingStatus');
+                    
+                    // 更新状态提示
+                    if (data.status === 'pending') {
+                        statusDiv.textContent = '正在加入队列...';
+                    } else if (data.status === 'queued') {
+                        statusDiv.textContent = '正在排队等待批改...';
+                    } else if (data.status === 'processing') {
+                        statusDiv.textContent = 'AI 正在批改中，请稍候...';
+                    } else if (data.status === 'completed') {
+                        // 批改完成，显示结果
+                        loadingDiv.style.display = 'none';
+                        resultDiv.style.display = 'block';
+                        resultDiv.textContent = data.result || '批改完成';
+                        eventSource.close();
+                    } else if (data.status === 'failed') {
+                        // 批改失败
+                        loadingDiv.style.display = 'none';
+                        resultDiv.style.display = 'block';
+                        resultDiv.textContent = '批改失败：' + (data.result || '未知错误');
+                        resultDiv.style.background = 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)';
+                        resultDiv.style.borderLeftColor = '#ef4444';
+                        eventSource.close();
+                    }
+                } catch (error) {
+                    console.error('解析 SSE 数据失败:', error);
+                }
+            };
+            
+            eventSource.onerror = function(error) {
+                console.error('SSE 连接错误:', error);
+                document.getElementById('loadingStatus').textContent = '连接服务器失败，请刷新页面重试';
+                eventSource.close();
+            };
+        }
+    </script>
 </body>
 </html>
