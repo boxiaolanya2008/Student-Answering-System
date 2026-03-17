@@ -197,7 +197,21 @@ def get_ai_result(image_path, title):
 3. 总体评价
 4. 打分 (0-100)
 
-请以清晰的格式输出批改结果。"""
+要求：
+- 使用纯文本格式，不要使用任何 Markdown 语法（不要用 **、#、` 等符号）
+- 使用简洁清晰的语言
+- 换行分隔不同部分
+- 可以使用简单的符号如 ✓ ✗ → 等
+
+示例格式：
+【批改结果】
+
+第 1 题：正确 ✓
+第 2 题：错误 ✗ (正确答案应为 B)
+第 3 题：正确 ✓
+
+总体评价：完成良好，注意计算准确性。
+得分：「实际得分」"""
         
         # 调用 AI API
         headers = {
@@ -210,7 +224,18 @@ def get_ai_result(image_path, title):
             "messages": [
                 {
                     "role": "user",
-                    "content": prompt
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{image_base64}"
+                            }
+                        }
+                    ]
                 }
             ],
             "stream": False
