@@ -201,6 +201,12 @@
                     <h3 class="card-title">批改结果</h3>
                     
                     {% if assignment['ai_result'] %}
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <span style="color: #64748b; font-size: 0.9rem;">💡 AI 已批改完成</span>
+                            <button onclick="location.reload()" style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(37, 99, 235, 0.3)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
+                                🔄 刷新页面
+                            </button>
+                        </div>
                         <div id="aiResult" class="result-content">
                             {{ assignment['ai_result'] }}
                         </div>
@@ -208,6 +214,10 @@
                         <div id="aiLoading" style="padding: 2rem; text-align: center; color: #94a3b8;">
                             <div style="font-size: 1.5rem; margin-bottom: 1rem;">⏳ AI 正在批改中...</div>
                             <div id="loadingStatus" style="color: #64748b;">请稍候，结果将实时显示</div>
+                            <div style="margin-top: 1.5rem; padding: 1rem; background: #fef3c7; border-radius: 6px; border-left: 4px solid #f59e0b;">
+                                <strong>💡 温馨提示：</strong><br>
+                                <span style="color: #92400e; font-size: 0.9rem;">如果长时间未显示结果，请刷新页面试试。AI 批改需要一定时间，请耐心等待。</span>
+                            </div>
                         </div>
                         <div id="aiResult" class="result-content" style="display: none;"></div>
                     {% endif %}

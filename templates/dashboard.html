@@ -220,16 +220,17 @@
             background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
             color: white;
             border: none;
-            padding: 0.5rem 1rem;
+            padding: 0.4rem 0.8rem;
             border-radius: 6px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             opacity: 0;
             position: absolute;
-            top: 1rem;
-            right: 1rem;
+            top: 0.75rem;
+            right: 0.75rem;
             z-index: 10;
+            font-size: 0.85rem;
         }
         .assignment-card:hover .btn-delete {
             opacity: 1;
@@ -247,6 +248,86 @@
             font-weight: 700;
             margin-left: 0.5rem;
             display: inline-block;
+        }
+        /* 自定义删除确认对话框 */
+        .delete-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+        .delete-modal {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .delete-modal h3 {
+            color: #1e293b;
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+        }
+        .delete-modal p {
+            color: #64748b;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+        .delete-modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+        .btn-cancel {
+            background: #f1f5f9;
+            color: #64748b;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-cancel:hover {
+            background: #e2e8f0;
+        }
+        .btn-confirm {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-confirm:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
         }
         .assignments-grid {
             display: grid;
@@ -419,12 +500,6 @@
     <!-- 导航栏 -->
     <nav class="navbar-custom">
         <div class="navbar-container">
-            <div class="logo-section">
-                <div class="logo-icon">
-                    <img src="/static/icons/logo.svg" alt="Logo">
-                </div>
-                <span class="system-title">学生答题系统</span>
-            </div>
             <div class="nav-right">
                 <span class="user-info">
                     {{ session.get('student_name', '未知') }} ({{ session.get('student_id', '') }})
@@ -442,7 +517,7 @@
     <div class="container-fluid">
         <div class="page-header">
             <div class="title-section">
-                <h2>我的作业</h2>
+                <h2>📚 学生答题系统 - 作业列表</h2>
                 <p class="page-subtitle">查看所有已提交的作业及批改结果</p>
             </div>
             <div class="action-buttons">
@@ -497,15 +572,42 @@
         {% endif %}
     </div>
 
+    <!-- 自定义删除确认对话框 -->
+    <div id="deleteModalOverlay" class="delete-modal-overlay">
+        <div class="delete-modal">
+            <h3>⚠️ 确认删除</h3>
+            <p>管理员，您确定要删除这份作业吗？<br><strong>此操作不可恢复！</strong></p>
+            <div class="delete-modal-actions">
+                <button class="btn-cancel" onclick="closeDeleteModal()">取消</button>
+                <button class="btn-confirm" id="confirmDeleteBtn">确认删除</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // 删除作业功能（仅管理员）
+        let currentDeleteId = null;
+        
+        function showDeleteModal(assignmentId) {
+            currentDeleteId = assignmentId;
+            document.getElementById('deleteModalOverlay').style.display = 'flex';
+        }
+        
+        function closeDeleteModal() {
+            document.getElementById('deleteModalOverlay').style.display = 'none';
+            currentDeleteId = null;
+        }
+        
         async function deleteAssignment(assignmentId) {
-            if (!confirm('确定要删除这份作业吗？此操作不可恢复！')) {
-                return;
-            }
+            showDeleteModal(assignmentId);
+        }
+        
+        // 确认删除按钮事件
+        document.getElementById('confirmDeleteBtn').addEventListener('click', async function() {
+            if (!currentDeleteId) return;
             
             try {
-                const response = await fetch(`/delete/${assignmentId}`, {
+                const response = await fetch(`/delete/${currentDeleteId}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -515,15 +617,32 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    alert('删除成功！');
+                    closeDeleteModal();
+                    alert('✅ 删除成功！');
                     location.reload();
                 } else {
-                    alert('删除失败：' + result.message);
+                    closeDeleteModal();
+                    alert('❌ 删除失败：' + result.message);
                 }
             } catch (error) {
-                alert('删除失败：' + error.message);
+                closeDeleteModal();
+                alert('❌ 删除失败：' + error.message);
             }
-        }
+        });
+        
+        // 点击遮罩层关闭对话框
+        document.getElementById('deleteModalOverlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDeleteModal();
+            }
+        });
+        
+        // ESC 键关闭对话框
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeDeleteModal();
+            }
+        });
     </script>
 </body>
 </html>
