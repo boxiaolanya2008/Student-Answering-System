@@ -175,21 +175,22 @@ def login_required(f):
 
 def get_ai_result(image_path, title):
     """
-    调用 AI API 进行批改
-    支持多种 AI 服务（当前配置优先使用 Infini-AI）
+    调用 Infini-AI API 进行批改
     """
     import requests
     import base64
     
-    # 检查是否配置了 AI_API_KEY（优先使用 Infini-AI）
-    if config.AI_API_KEY and config.AI_BASE_URL and config.AI_MODEL:
-        try:
-            # 读取图片并转为 base64
-            with open(image_path, 'rb') as f:
-                image_base64 = base64.b64encode(f.read()).decode('utf-8')
-            
-            # 构建提示词
-            prompt = f"""请批改这份学生作业：{title}
+    # 检查是否配置了 AI_API_KEY
+    if not config.AI_API_KEY or not config.AI_BASE_URL or not config.AI_MODEL:
+        raise ValueError("AI 配置未设置，请在 .env 文件中配置 AI_API_KEY、AI_BASE_URL 和 AI_MODEL")
+    
+    try:
+        # 读取图片并转为 base64
+        with open(image_path, 'rb') as f:
+            image_base64 = base64.b64encode(f.read()).decode('utf-8')
+        
+        # 构建提示词
+        prompt = f"""请批改这份学生作业：{title}
 请识别图片中的题目和学生答案，判断每道题是否正确，并给出：
 1. 每道题的判断结果 (正确/错误)
 2. 错误题目的正确答案
@@ -197,129 +198,60 @@ def get_ai_result(image_path, title):
 4. 打分 (0-100)
 
 请以清晰的格式输出批改结果。"""
-            
-            # 调用 AI API
-            headers = {
-                'Authorization': f'Bearer {config.AI_API_KEY}',
-                'Content-Type': 'application/json'
-            }
-            
-            payload = {
-                "model": config.AI_MODEL,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ],
-                "stream": False
-            }
-            
-            response = requests.post(
-                f"{config.AI_BASE_URL}/chat/completions",
-                json=payload,
-                headers=headers,
-                timeout=60
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                ai_text = result['choices'][0]['message']['content']
-                
-                return {
-                    'success': True,
-                    'result': ai_text,
-                    'score': None,
-                    'provider': 'Infini-AI'
-                }
-            else:
-                error_msg = f"API 请求失败：HTTP {response.status_code}"
-                print(f"Error: {error_msg}")
-                print(f"Response: {response.text}")
-                return {
-                    'success': False,
-                    'result': f'{error_msg}\n\n{response.text}',
-                    'score': None,
-                    'provider': 'Infini-AI'
-                }
-                
-        except Exception as e:
-            print(f"AI 调用异常：{str(e)}")
-            return {
-                'success': False,
-                'result': f'AI 批改异常：{str(e)}',
-                'score': None,
-                'provider': 'Infini-AI'
-            }
-    
-    # 如果没有配置 AI，返回模拟结果
-    elif not config.BAIDU_API_KEY or not config.BAIDU_SECRET_KEY:
-        return {
-            'success': True,
-            'result': '【AI 批改结果 - 演示模式】\n\n由于未配置 AI API，以下为模拟批改结果：\n\n1. 第一题：正确 ✓\n2. 第二题：错误 ✗ (正确答案应为 B)\n3. 第三题：正确 ✓\n4. 第四题：部分正确 (步骤完整但计算有误)\n\n总体评价：完成良好，注意计算准确性。\n得分：75/100',
-            'score': 75,
-            'provider': 'Demo Mode'
+        
+        # 调用 AI API
+        headers = {
+            'Authorization': f'Bearer {config.AI_API_KEY}',
+            'Content-Type': 'application/json'
         }
-    
-    # 使用百度 AI（备用方案）
-    else:
-        try:
-            # 读取图片并转为 base64
-            with open(image_path, 'rb') as f:
-                image_base64 = base64.b64encode(f.read()).decode('utf-8')
-            
-            # 获取 access_token
-            auth_url = 'https://aip.baidubce.com/oauth/2.0/token'
-            auth_params = {
-                'grant_type': 'client_credentials',
-                'client_id': config.BAIDU_API_KEY,
-                'client_secret': config.BAIDU_SECRET_KEY
-            }
-            auth_response = requests.post(auth_url, params=auth_params)
-            access_token = auth_response.json().get('access_token')
-            
-            # 调用文心一言 API
-            ai_url = f'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/{config.BAIDU_AI_MODEL}?access_token={access_token}'
-            
-            prompt = f"""请批改这份学生作业：{title}
-请识别图片中的题目和学生答案，判断每道题是否正确，并给出：
-1. 每道题的判断结果 (正确/错误)
-2. 错误题目的正确答案
-3. 总体评价
-4. 打分 (0-100)
-
-请以清晰的格式输出批改结果。"""
-            
-            payload = {
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ],
-                "disable_search": False
-            }
-            
-            headers = {'Content-Type': 'application/json'}
-            response = requests.post(ai_url, json=payload, headers=headers)
+        
+        payload = {
+            "model": config.AI_MODEL,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            "stream": False
+        }
+        
+        response = requests.post(
+            f"{config.AI_BASE_URL}/chat/completions",
+            json=payload,
+            headers=headers,
+            timeout=60
+        )
+        
+        if response.status_code == 200:
             result = response.json()
-            
-            ai_text = result.get('result', 'AI 批改失败')
+            ai_text = result['choices'][0]['message']['content']
             
             return {
                 'success': True,
                 'result': ai_text,
                 'score': None,
-                'provider': 'Baidu AI'
+                'provider': 'Infini-AI'
             }
-            
-        except Exception as e:
+        else:
+            error_msg = f"API 请求失败：HTTP {response.status_code}"
+            print(f"Error: {error_msg}")
+            print(f"Response: {response.text}")
             return {
                 'success': False,
-                'result': f'AI 批改失败：{str(e)}',
+                'result': f'{error_msg}\n\n{response.text}',
                 'score': None,
-                'provider': 'Baidu AI'
+                'provider': 'Infini-AI'
             }
+            
+    except Exception as e:
+        print(f"AI 调用异常：{str(e)}")
+        return {
+            'success': False,
+            'result': f'AI 批改异常：{str(e)}',
+            'score': None,
+            'provider': 'Infini-AI'
+        }
 
 # ==================== 路由处理 ====================
 
