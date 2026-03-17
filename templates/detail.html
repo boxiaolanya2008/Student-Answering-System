@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ assignment['title'] }} - 作业详情</title>
     <link href="/static/css/theme.css" rel="stylesheet">
-    <!-- 引入 marked.js 用于解析 Markdown -->
-    <script src="/static/js/marked.min.js"></script>
     <style>
         body {
             background-color: #f8fafc;
@@ -83,107 +81,18 @@
             color: #1e293b;
             font-size: 0.95rem;
         }
-        .ai-result {
+        .result-content {
             background: linear-gradient(135deg, #f8f9ff 0%, #e0f2fe 100%);
             border-left: 4px solid #2563eb;
             padding: 1.5rem;
             border-radius: 8px;
+            white-space: pre-wrap;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-size: 0.95rem;
             line-height: 1.8;
             color: #1e293b;
             max-height: 600px;
             overflow-y: auto;
-        }
-        
-        /* Markdown 样式 */
-        .ai-result h1,
-        .ai-result h2,
-        .ai-result h3,
-        .ai-result h4,
-        .ai-result h5,
-        .ai-result h6 {
-            margin-top: 1.5em;
-            margin-bottom: 0.5em;
-            font-weight: 600;
-            color: #1e40af;
-        }
-        
-        .ai-result h1 { font-size: 1.5rem; border-bottom: 2px solid #e0e7ff; padding-bottom: 0.3em; }
-        .ai-result h2 { font-size: 1.25rem; border-bottom: 1px solid #e0e7ff; padding-bottom: 0.25em; }
-        .ai-result h3 { font-size: 1.1rem; }
-        
-        .ai-result p {
-            margin-bottom: 1em;
-        }
-        
-        .ai-result ul,
-        .ai-result ol {
-            margin-bottom: 1em;
-            padding-left: 2em;
-        }
-        
-        .ai-result li {
-            margin-bottom: 0.5em;
-        }
-        
-        .ai-result code {
-            background: rgba(37, 99, 235, 0.1);
-            padding: 0.2em 0.4em;
-            border-radius: 3px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 0.9em;
-            color: #dc2626;
-        }
-        
-        .ai-result pre {
-            background: #1e293b;
-            color: #f1f5f9;
-            padding: 1rem;
-            border-radius: 6px;
-            overflow-x: auto;
-            margin-bottom: 1em;
-        }
-        
-        .ai-result pre code {
-            background: transparent;
-            color: inherit;
-            padding: 0;
-        }
-        
-        .ai-result blockquote {
-            border-left: 4px solid #2563eb;
-            padding-left: 1rem;
-            margin: 1em 0;
-            color: #64748b;
-            font-style: italic;
-        }
-        
-        .ai-result table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-bottom: 1em;
-        }
-        
-        .ai-result th,
-        .ai-result td {
-            border: 1px solid #cbd5e1;
-            padding: 0.75rem;
-            text-align: left;
-        }
-        
-        .ai-result th {
-            background: #e0e7ff;
-            font-weight: 600;
-        }
-        
-        .ai-result tr:nth-child(even) {
-            background: #f8fafc;
-        }
-        
-        .ai-result strong {
-            color: #1e40af;
-            font-weight: 600;
         }
         .btn-back {
             background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
@@ -287,8 +196,8 @@
                     <h3 class="card-title">批改结果</h3>
                     
                     {% if assignment['ai_result'] %}
-                        <div id="aiResult" class="ai-result">
-                            <!-- Markdown 将被渲染到这里 -->
+                        <div class="result-content">
+                            {{ assignment['ai_result'] }}
                         </div>
                     {% else %}
                         <div style="padding: 2rem; text-align: center; color: #94a3b8;">
@@ -299,18 +208,5 @@
             </div>
         </div>
     </div>
-
-    <script>
-        // 渲染 Markdown
-        document.addEventListener('DOMContentLoaded', function() {
-            const aiResultElement = document.getElementById('aiResult');
-            const rawMarkdown = `{{ assignment['ai_result'] | safe }}`;
-            
-            if (aiResultElement && rawMarkdown) {
-                // 使用 marked.js 渲染 Markdown
-                aiResultElement.innerHTML = marked.parse(rawMarkdown);
-            }
-        });
-    </script>
 </body>
 </html>
