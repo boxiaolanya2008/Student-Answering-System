@@ -2,7 +2,7 @@
 *.db
 *.sqlite
 *.sqlite3
-
+database.db
 
 # Python
 __pycache__/
@@ -50,4 +50,3 @@ logs/
 config_local.py
 *.pem
 *.key
-__pycache__/
