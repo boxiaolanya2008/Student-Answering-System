@@ -55,7 +55,7 @@ class AIGradingQueue:
         return self.queue.qsize()
     
     def get_queue_status(self):
-        """获取队列状态"""
+        """获取队列状态（从数据库读取真实统计）"""
         queue_list = list(self.queue.queue)
         position = 0
         for i, task in enumerate(queue_list):
@@ -63,13 +63,37 @@ class AIGradingQueue:
                 position = i + 1
                 break
         
+        # 从数据库读取今日 token 使用量
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        today = datetime.now().date()
+        cursor.execute('''
+            SELECT SUM(token_used) as total_tokens 
+            FROM ai_grading_logs 
+            WHERE DATE(created_at) = ?
+        ''', (today.isoformat(),))
+        result = cursor.fetchone()
+        db_token_usage = result['total_tokens'] if result and result['total_tokens'] else 0
+        
+        # 读取今日已完成数量
+        cursor.execute('''
+            SELECT COUNT(*) as count 
+            FROM assignments 
+            WHERE status = 'completed' 
+            AND DATE(upload_time) = ?
+        ''', (today.isoformat(),))
+        completed_result = cursor.fetchone()
+        completed_today = completed_result['count'] if completed_result else 0
+        
+        conn.close()
+        
         return {
             'queue_length': len(queue_list),
             'processing': self.processing,
             'current_task': self.current_task,
             'position': position,
-            'completed_today': self.completed_count,
-            'token_usage': self.token_usage,
+            'completed_today': completed_today,
+            'token_usage': db_token_usage,
             'token_limit': self.max_daily_tokens
         }
     
@@ -136,11 +160,21 @@ class AIGradingQueue:
         """更新数据库中的批改结果"""
         conn = get_db_connection()
         cursor = conn.cursor()
+        
+        # 更新作业状态
         cursor.execute('''
             UPDATE assignments 
             SET ai_result = ?, status = ?
             WHERE id = ?
         ''', (task['result'], task['status'], task['assignment_id']))
+        
+        # 如果是完成状态，记录 token 使用量
+        if task.get('token_used') and task['status'] == 'completed':
+            cursor.execute('''
+                INSERT INTO ai_grading_logs (assignment_id, token_used)
+                VALUES (?, ?)
+            ''', (task['assignment_id'], task['token_used']))
+        
         conn.commit()
         conn.close()
 

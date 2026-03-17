@@ -21,7 +21,16 @@ def init_database():
         )
     ''')
     
-    # 创建作业表
+    # 创建 AI 批改记录表
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS ai_grading_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            assignment_id INTEGER NOT NULL,
+            token_used INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (assignment_id) REFERENCES assignments (id)
+        )
+    ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS assignments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
