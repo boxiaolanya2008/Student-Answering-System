@@ -1,0 +1,13 @@
+<!-- Camera Icon SVG -->
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="32" cy="32" r="32" fill="url(#cameraGradient)"/>
+    <defs>
+        <linearGradient id="cameraGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#e0f2fe;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#c7d2fe;stop-opacity:1" />
+        </linearGradient>
+    </defs>
+    <path d="M20 22C19.4477 22 19 21.5523 19 21V19C19 18.4477 19.4477 18 20 18H23.1716C23.4365 18 23.6883 17.8894 23.8678 17.6955L25.1322 16.3289C25.3117 16.135 25.5635 16.0244 25.8284 16.0244H38.1716C38.4365 16.0244 38.6883 16.135 38.8678 16.3289L40.1322 17.6955C40.3117 17.8894 40.5635 18 40.8284 18H44C44.5523 18 45 18.4477 45 19V21C45 21.5523 44.5523 22 44 22H20Z" stroke="#0284c7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="32" cy="30" r="8" stroke="#0284c7" stroke-width="2"/>
+    <path d="M20 38C20 38 24 44 32 44C40 44 44 38 44 38" stroke="#0284c7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

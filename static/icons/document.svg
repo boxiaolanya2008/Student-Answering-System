@@ -1,0 +1,15 @@
+<!-- Document Icon SVG -->
+<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="40" cy="40" r="40" fill="url(#gradient)"/>
+    <defs>
+        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#e0e7ff;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#c7d2fe;stop-opacity:1" />
+        </linearGradient>
+    </defs>
+    <path d="M28 26C28 25.4477 28.4477 25 29 25H51C51.5523 25 52 25.4477 52 26V54C52 54.5523 51.5523 55 51 55H29C28.4477 55 28 54.5523 28 54V26Z" stroke="#4338ca" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M32 30H48" stroke="#4338ca" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M32 35H48" stroke="#4338ca" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M32 40H45" stroke="#4338ca" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M32 45H40" stroke="#4338ca" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

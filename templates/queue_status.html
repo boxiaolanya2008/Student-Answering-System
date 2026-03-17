@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>批改队列状态 - 学生答题系统</title>
+    <link href="/static/css/theme.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8fafc;
+            overflow-x: hidden;
+        }
+        .navbar-custom {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            background: rgba(37, 99, 235, 0.95);
+        }
+        .navbar-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .logo-icon svg {
+            width: 28px;
+            height: 28px;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .system-title {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .user-info {
+            color: rgba(255,255,255,0.95);
+            font-size: 0.95rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        .user-info:hover {
+            background: rgba(255,255,255,0.15);
+        }
+        .nav-link-custom {
+            color: rgba(255,255,255,0.95);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .nav-link-custom:hover {
+            color: white;
+            background: rgba(255,255,255,0.15);
+        }
+        .container-fluid {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .page-header {
+            margin-bottom: 2rem;
+            animation: slideInDown 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both;
+        }
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .page-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+        .page-subtitle {
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: cardEnter 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+            position: relative;
+            overflow: hidden;
+        }
+        @keyframes cardEnter {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        .stat-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .stat-card:hover::before {
+            opacity: 1;
+        }
+        .stat-label {
+            font-size: 0.875rem;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 0.25rem;
+        }
+        .stat-value.blue { color: #2563eb; }
+        .stat-value.green { color: #10b981; }
+        .stat-value.orange { color: #f59e0b; }
+        .stat-value.red { color: #ef4444; }
+        .stat-desc {
+            font-size: 0.875rem;
+            color: #94a3b8;
+        }
+        .progress-section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+            margin-bottom: 2rem;
+            animation: cardEnter 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.3s both;
+        }
+        .progress-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 1.5rem;
+        }
+        .progress-bar-container {
+            background: #e2e8f0;
+            border-radius: 9999px;
+            height: 12px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #2563eb 0%, #1e40af 100%);
+            border-radius: 9999px;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255,255,255,0.3),
+                transparent
+            );
+            animation: shimmer 2s ease-in-out infinite;
+        }
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+        .queue-list {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+            animation: cardEnter 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.4s both;
+        }
+        .queue-list-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 1.5rem;
+        }
+        .queue-item {
+            padding: 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: queueItemEnter 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+        }
+        @keyframes queueItemEnter {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        .queue-item:hover {
+            transform: translateX(4px);
+            border-color: #2563eb;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
+        }
+        .queue-item.processing {
+            border-left: 4px solid #10b981;
+            background: linear-gradient(90deg, rgba(16, 185, 129, 0.05) 0%, transparent 100%);
+        }
+        .queue-item.pending {
+            border-left: 4px solid #f59e0b;
+            background: linear-gradient(90deg, rgba(245, 158, 11, 0.05) 0%, transparent 100%);
+        }
+        .queue-item-info {
+            flex: 1;
+        }
+        .queue-item-title {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.25rem;
+        }
+        .queue-item-meta {
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+        .queue-item-status {
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+        .status-processing {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #065f46;
+            animation: statusPulse 2s ease-in-out infinite;
+        }
+        @keyframes statusPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .status-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        .btn-back {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 1.5rem;
+        }
+        .btn-back:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: #94a3b8;
+        }
+        .refresh-hint {
+            text-align: center;
+            color: #64748b;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+        }
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .navbar-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar-custom">
+        <div class="navbar-container">
+            <div class="logo-section">
+                <div class="logo-icon">
+                    <img src="/static/icons/logo.svg" alt="Logo">
+                </div>
+                <span class="system-title">学生答题系统</span>
+            </div>
+            <div class="nav-right">
+                <span class="user-info">{{ session.get('student_name', '未知') }} ({{ session.get('student_id', '') }})</span>
+                <a class="nav-link-custom" href="{{ url_for('dashboard') }}">返回作业列表</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区 -->
+    <div class="container-fluid">
+        <a href="{{ url_for('dashboard') }}" class="btn-back">← 返回作业列表</a>
+        
+        <div class="page-header">
+            <h1 class="page-title">AI 批改队列状态</h1>
+            <p class="page-subtitle">实时查看作业批改进度和 Token 使用情况</p>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="stats-grid">
+            <div class="stat-card" style="animation-delay: 0.1s">
+                <div class="stat-label">当前排队</div>
+                <div class="stat-value blue" id="queueLength">{{ queue_info.queue_length }}</div>
+                <div class="stat-desc">份作业等待批改</div>
+            </div>
+            
+            <div class="stat-card" style="animation-delay: 0.2s">
+                <div class="stat-label">正在批改</div>
+                <div class="stat-value green" id="processingStatus">{{ '是' if queue_info.processing else '否' }}</div>
+                <div class="stat-desc">AI 老师工作中</div>
+            </div>
+            
+            <div class="stat-card" style="animation-delay: 0.3s">
+                <div class="stat-label">今日已完成</div>
+                <div class="stat-value orange" id="completedCount">{{ queue_info.completed_count }}</div>
+                <div class="stat-desc">份作业已批改</div>
+            </div>
+            
+            <div class="stat-card" style="animation-delay: 0.4s">
+                <div class="stat-label">Token 使用</div>
+                <div class="stat-value red" id="tokenUsage">{{ queue_info.token_usage }}</div>
+                <div class="stat-desc">/ {{ queue_info.token_limit }} 上限</div>
+            </div>
+        </div>
+
+        <!-- Token 进度条 -->
+        <div class="progress-section">
+            <h3 class="progress-title">今日 Token 使用进度</h3>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="tokenProgressBar" style="width: 0%"></div>
+            </div>
+            <div class="progress-info">
+                <span>已使用：{{ queue_info.token_usage }}</span>
+                <span>剩余：{{ queue_info.token_limit - queue_info.token_usage }}</span>
+                <span>总限额：{{ queue_info.token_limit }}</span>
+            </div>
+        </div>
+
+        <!-- 队列列表 -->
+        <div class="queue-list">
+            <h3 class="queue-list-title">当前队列</h3>
+            
+            {% if queue_info.processing and queue_info.current_task %}
+            <div class="queue-item processing">
+                <div class="queue-item-info">
+                    <div class="queue-item-title">{{ queue_info.current_task.title }}</div>
+                    <div class="queue-item-meta">
+                        开始时间：{{ queue_info.current_task.started_at.strftime('%H:%M:%S') if queue_info.current_task.started_at else '即将开始' }}
+                    </div>
+                </div>
+                <span class="queue-item-status status-processing">正在批改</span>
+            </div>
+            {% endif %}
+            
+            <div id="pendingQueue">
+                <!-- 待处理队列将通过 JavaScript 动态加载 -->
+            </div>
+            
+            {% if not queue_info.processing and queue_info.queue_length == 0 %}
+            <div class="empty-state">
+                <p>当前没有待批改的作业</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <p class="refresh-hint">页面将每 3 秒自动刷新一次</p>
+    </div>
+
+    <script>
+        // 更新 Token 进度条
+        const tokenUsage = {{ queue_info.token_usage }};
+        const tokenLimit = {{ queue_info.token_limit }};
+        const tokenPercentage = Math.min((tokenUsage / tokenLimit) * 100, 100);
+        document.getElementById('tokenProgressBar').style.width = tokenPercentage + '%';
+        
+        // 自动刷新
+        function refreshQueueStatus() {
+            fetch('/api/queue-status')
+                .then(response => response.json())
+                .then(data => {
+                    // 更新统计数据
+                    document.getElementById('queueLength').textContent = data.queue_length;
+                    document.getElementById('processingStatus').textContent = data.processing ? '是' : '否';
+                    document.getElementById('completedCount').textContent = data.completed_count;
+                    document.getElementById('tokenUsage').textContent = data.token_usage;
+                    
+                    // 更新 Token 进度条
+                    const newPercentage = Math.min((data.token_usage / data.token_limit) * 100, 100);
+                    document.getElementById('tokenProgressBar').style.width = newPercentage + '%';
+                })
+                .catch(error => console.error('获取队列状态失败:', error));
+        }
+        
+        // 每 3 秒刷新一次
+        setInterval(refreshQueueStatus, 3000);
+    </script>
+</body>
+</html>

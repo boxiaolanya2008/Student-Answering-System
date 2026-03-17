@@ -1,0 +1,14 @@
+<!-- Queue Icon SVG - 用于队列状态页 -->
+<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="40" cy="40" r="40" fill="url(#queueGradient)"/>
+    <defs>
+        <linearGradient id="queueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#bfdbfe;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#93c5fd;stop-opacity:1" />
+        </linearGradient>
+    </defs>
+    <path d="M24 26C24 25.4477 24.4477 25 25 25H55C55.5523 25 56 25.4477 56 26V30C56 30.5523 55.5523 31 55 31H25C24.4477 31 24 30.5523 24 30V26Z" stroke="#1e40af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M24 36C24 35.4477 24.4477 35 25 35H55C55.5523 35 56 35.4477 56 36V40C56 40.5523 55.5523 41 55 41H25C24.4477 41 24 40.5523 24 40V36Z" stroke="#1e40af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M24 46C24 45.4477 24.4477 45 25 45H45C45.5523 45 46 45.4477 46 46V50C46 50.5523 45.5523 51 45 51H25C24.4477 51 24 50.5523 24 50V46Z" stroke="#1e40af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="50" cy="48" r="4" fill="#1e40af"/>
+</svg>

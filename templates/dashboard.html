@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的作业 - 学生答题系统</title>
+    <link href="/static/css/theme.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8fafc;
+            overflow-x: hidden;
+        }
+        .navbar-custom {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            background: rgba(37, 99, 235, 0.95);
+        }
+        .navbar-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .logo-icon svg {
+            width: 28px;
+            height: 28px;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .system-title {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .user-info {
+            color: rgba(255,255,255,0.95);
+            font-size: 0.95rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        .user-info:hover {
+            background: rgba(255,255,255,0.15);
+        }
+        .nav-link-custom {
+            color: rgba(255,255,255,0.95);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .nav-link-custom::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.2);
+            transition: left 0.3s ease;
+        }
+        .nav-link-custom:hover::before {
+            left: 100%;
+        }
+        .nav-link-custom:hover {
+            color: white;
+            background: rgba(255,255,255,0.15);
+        }
+        .container-fluid {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            animation: slideInDown 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both;
+        }
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .title-section h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+            position: relative;
+            display: inline-block;
+        }
+        .title-section h2::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #2563eb 0%, #1e40af 100%);
+            animation: expandLine 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.4s forwards;
+        }
+        @keyframes expandLine {
+            to {
+                width: 100%;
+            }
+        }
+        .page-subtitle {
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+        .btn-upload {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            color: white;
+            border: none;
+            padding: 0.875rem 2rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            display: inline-block;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-upload::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s ease, height 0.6s ease;
+        }
+        .btn-upload:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        .btn-upload:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+        }
+        .btn-queue {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            padding: 0.875rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            display: inline-block;
+            margin-right: 1rem;
+        }
+        .btn-queue:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+        }
+        .assignments-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 1.5rem;
+        }
+        .assignment-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #2563eb;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            animation: cardEnter 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+        }
+        @keyframes cardEnter {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        .assignment-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .assignment-card:hover::before {
+            opacity: 1;
+        }
+        .assignment-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+            border-left-color: #1e40af;
+        }
+        .assignment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+        .assignment-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1e293b;
+            flex: 1;
+            transition: color 0.3s ease;
+        }
+        .assignment-card:hover .assignment-title {
+            color: #2563eb;
+        }
+        .status-badge {
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+            white-space: nowrap;
+            margin-left: 0.75rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .status-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        .status-completed {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .status-failed {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        .status-queued {
+            background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
+            color: #1e40af;
+            animation: queuePulse 2s ease-in-out infinite;
+        }
+        @keyframes queuePulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .assignment-meta {
+            font-size: 0.875rem;
+            color: #64748b;
+            line-height: 1.8;
+            position: relative;
+            z-index: 1;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            animation: fadeInUp 0.6s ease;
+        }
+        .empty-state-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem;
+            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: bounce 2s ease-in-out infinite;
+        }
+        .empty-state-icon svg {
+            width: 48px;
+            height: 48px;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .empty-state h4 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 0.5rem;
+        }
+        .empty-state p {
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: stretch;
+            }
+            .action-buttons {
+                flex-direction: column;
+            }
+            .btn-queue {
+                margin-right: 0;
+            }
+            .assignments-grid {
+                grid-template-columns: 1fr;
+            }
+            .navbar-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar-custom">
+        <div class="navbar-container">
+            <div class="logo-section">
+                <div class="logo-icon">
+                    <img src="/static/icons/logo.svg" alt="Logo">
+                </div>
+                <span class="system-title">学生答题系统</span>
+            </div>
+            <div class="nav-right">
+                <span class="user-info">{{ session.get('student_name', '未知') }} ({{ session.get('student_id', '') }})</span>
+                <a href="{{ url_for('queue_status') }}" class="nav-link-custom">批改队列</a>
+                <a class="nav-link-custom" href="{{ url_for('logout') }}">退出登录</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区 -->
+    <div class="container-fluid">
+        <div class="page-header">
+            <div class="title-section">
+                <h2>我的作业</h2>
+                <p class="page-subtitle">查看所有已提交的作业及批改结果</p>
+            </div>
+            <div class="action-buttons">
+                <a href="{{ url_for('queue_status') }}" class="btn-queue">
+                    查看批改队列
+                </a>
+                <a href="{{ url_for('upload') }}" class="btn-upload">
+                    上传新作业
+                </a>
+            </div>
+        </div>
+
+        <!-- 作业列表 -->
+        {% if assignments %}
+        <div class="assignments-grid">
+            {% for assignment in assignments %}
+            <div class="assignment-card" onclick="location.href='{{ url_for('assignment_detail', assignment_id=assignment['id']) }}'" style="animation-delay: {{ loop.index * 0.1 }}s">
+                <div class="assignment-header">
+                    <div class="assignment-title">{{ assignment['title'] }}</div>
+                    <span class="status-badge status-{{ assignment['status'] }}">
+                        {% if assignment['status'] == 'pending' %}
+                            待批改
+                        {% elif assignment['status'] == 'completed' %}
+                            已批改
+                        {% elif assignment['status'] == 'queued' %}
+                            排队中
+                        {% else %}
+                            批改失败
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="assignment-meta">
+                    <div>上传时间：{{ assignment['upload_time'] }}</div>
+                    <div>学号：{{ assignment['student_id'] }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <img src="/static/icons/document.svg" alt="Document">
+            </div>
+            <h4>还没有作业</h4>
+            <p>点击上方按钮上传第一份作业吧</p>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

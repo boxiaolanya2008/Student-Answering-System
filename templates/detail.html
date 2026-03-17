@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ assignment['title'] }} - 作业详情</title>
+    <link href="/static/css/theme.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8fafc;
+        }
+        .navbar-custom {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 1rem 0;
+        }
+        .container-fluid {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        @media (max-width: 992px) {
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .card-white {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+            margin-bottom: 1.5rem;
+        }
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f1f5f9;
+        }
+        .image-display-box {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .homework-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .info-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem 0;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+        .info-value {
+            color: #1e293b;
+            font-size: 0.95rem;
+        }
+        .result-content {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border-left: 4px solid #2563eb;
+            padding: 1.5rem;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+            line-height: 1.8;
+            color: #1e293b;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .btn-back {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-back:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        .nav-link-custom {
+            color: rgba(255,255,255,0.95);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .nav-link-custom:hover {
+            color: white;
+            opacity: 1;
+        }
+        .user-info {
+            color: rgba(255,255,255,0.95);
+            font-size: 0.95rem;
+            margin-right: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar-custom">
+        <div class="container-fluid" style="padding: 0; max-width: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <a href="{{ url_for('dashboard') }}" class="nav-link-custom" style="font-size: 1.5rem; font-weight: 700;">学生答题系统</a>
+                <div style="display: flex; align-items: center; gap: 1.5rem;">
+                    <span class="user-info">{{ session.get('student_name', '未知') }}</span>
+                    <a class="nav-link-custom" href="{{ url_for('dashboard') }}">返回作业列表</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区 -->
+    <div class="container-fluid">
+        <div style="margin-bottom: 1.5rem;">
+            <a href="{{ url_for('dashboard') }}" class="btn-back">← 返回列表</a>
+        </div>
+        
+        <div class="detail-grid">
+            <!-- 左侧：图片展示 -->
+            <div>
+                <div class="card-white">
+                    <h3 class="card-title">作业图片</h3>
+                    <div class="image-display-box">
+                        <img src="{{ url_for('uploaded_file', filename=assignment['image_path'].split('/')[-1]) }}" 
+                             alt="作业图片" class="homework-image">
+                    </div>
+                </div>
+                
+                <div class="card-white">
+                    <h3 class="card-title">作业信息</h3>
+                    <ul class="info-list">
+                        <li class="info-item">
+                            <span class="info-label">作业标题</span>
+                            <span class="info-value">{{ assignment['title'] }}</span>
+                        </li>
+                        <li class="info-item">
+                            <span class="info-label">学号</span>
+                            <span class="info-value">{{ assignment['student_id'] }}</span>
+                        </li>
+                        <li class="info-item">
+                            <span class="info-label">上传时间</span>
+                            <span class="info-value">{{ assignment['upload_time'] }}</span>
+                        </li>
+                        <li class="info-item">
+                            <span class="info-label">批改状态</span>
+                            <span class="info-value">
+                                {% if assignment['status'] == 'completed' %}
+                                    <span style="color: #059669;">已批改</span>
+                                {% elif assignment['status'] == 'pending' %}
+                                    <span style="color: #d97706;">待批改</span>
+                                {% else %}
+                                    <span style="color: #dc2626;">批改失败</span>
+                                {% endif %}
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 右侧：批改结果 -->
+            <div>
+                <div class="card-white">
+                    <h3 class="card-title">批改结果</h3>
+                    
+                    {% if assignment['ai_result'] %}
+                        <div class="result-content">
+                            {{ assignment['ai_result'] }}
+                        </div>
+                    {% else %}
+                        <div style="padding: 2rem; text-align: center; color: #94a3b8;">
+                            暂无批改结果
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

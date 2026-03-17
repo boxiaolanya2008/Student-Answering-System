@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学生答题系统 - 登录</title>
+    <link href="/static/css/theme.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-wrapper {
+            max-width: 420px;
+            width: 100%;
+            padding: 2rem;
+        }
+        .login-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 3rem;
+        }
+        .login-logo {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        .login-logo-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+        .login-logo-icon svg {
+            width: 48px;
+            height: 48px;
+        }
+        .login-logo h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.025em;
+        }
+        .login-logo p {
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        .btn-login {
+            width: 100%;
+            padding: 0.875rem;
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-login:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        .error-message {
+            background-color: #fee2e2;
+            color: #991b1b;
+            padding: 0.875rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-size: 0.95rem;
+            border: 1px solid #fecaca;
+        }
+        .demo-account {
+            text-align: center;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e2e8f0;
+        }
+        .demo-account p {
+            color: #64748b;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+        .demo-account code {
+            background: #f1f5f9;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            color: #334155;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-wrapper">
+        <div class="login-card">
+            <div class="login-logo">
+                <div class="login-logo-icon">
+                    <img src="/static/icons/logo.svg" alt="Logo">
+                </div>
+                <h1>学生答题系统</h1>
+                <p>请登录您的账号</p>
+            </div>
+            
+            {% if error %}
+            <div class="error-message">
+                {{ error }}
+            </div>
+            {% endif %}
+            
+            <form method="POST" action="{{ url_for('login') }}">
+                <div class="form-group">
+                    <label for="student_id" style="display: block; font-weight: 600; color: #334155; margin-bottom: 0.5rem;">学号</label>
+                    <input type="text" class="form-input" id="student_id" name="student_id" 
+                           placeholder="请输入学号" required autofocus>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password" style="display: block; font-weight: 600; color: #334155; margin-bottom: 0.5rem;">密码</label>
+                    <input type="password" class="form-input" id="password" name="password" 
+                           placeholder="请输入密码" required>
+                </div>
+                
+                <button type="submit" class="btn-login">
+                    登录
+                </button>
+            </form>
+            
+            <div class="demo-account">
+                <p>示例账号</p>
+                <code>学号：2024001 &nbsp; 密码：123456</code>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
