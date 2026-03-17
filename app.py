@@ -507,8 +507,9 @@ def stream_ai_result(assignment_id):
                 break
             
             # 发送当前状态
-            result_str = assignment['ai_result'] if assignment['ai_result'] else None
-            yield f"data: {{\"status\": \"{assignment['status']}\", \"result\": {repr(result_str)}}}\n\n"
+            result_str = assignment['ai_result'] if assignment['ai_result'] else 'null'
+            import json
+            yield f"data: {{\"status\": \"{assignment['status']}\", \"result\": {json.dumps(result_str)}}}\n\n"
             
             # 如果已完成或失败，停止推送
             if assignment['status'] in ['completed', 'failed']:

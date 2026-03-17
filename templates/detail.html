@@ -221,12 +221,23 @@
         const assignmentId = {{ assignment['id'] }};
         const hasResult = {{ 'true' if assignment['ai_result'] else 'false' }};
         
+        console.log('初始化 SSE - Assignment ID:', assignmentId, 'Has Result:', hasResult);
+        
         if (!hasResult) {
             const eventSource = new EventSource(`/stream-ai-result/${assignmentId}`);
             
+            console.log('SSE 连接已建立');
+            
+            eventSource.onopen = function() {
+                console.log('SSE 连接已打开');
+            };
+            
             eventSource.onmessage = function(event) {
+                console.log('收到 SSE 消息:', event.data);
+                
                 try {
                     const data = JSON.parse(event.data);
+                    console.log('解析后的数据:', data);
                     
                     if (data.error) {
                         document.getElementById('loadingStatus').textContent = '错误：' + data.error;
@@ -246,12 +257,15 @@
                     } else if (data.status === 'processing') {
                         statusDiv.textContent = 'AI 正在批改中，请稍候...';
                     } else if (data.status === 'completed') {
+                        console.log('批改完成！结果:', data.result);
                         // 批改完成，显示结果
                         loadingDiv.style.display = 'none';
                         resultDiv.style.display = 'block';
                         resultDiv.textContent = data.result || '批改完成';
                         eventSource.close();
+                        console.log('SSE 连接已关闭');
                     } else if (data.status === 'failed') {
+                        console.log('批改失败！错误:', data.result);
                         // 批改失败
                         loadingDiv.style.display = 'none';
                         resultDiv.style.display = 'block';
@@ -261,15 +275,24 @@
                         eventSource.close();
                     }
                 } catch (error) {
-                    console.error('解析 SSE 数据失败:', error);
+                    console.error('解析 SSE 数据失败:', error, '原始数据:', event.data);
                 }
             };
             
             eventSource.onerror = function(error) {
                 console.error('SSE 连接错误:', error);
-                document.getElementById('loadingStatus').textContent = '连接服务器失败，请刷新页面重试';
-                eventSource.close();
+                const readyState = eventSource.readyState;
+                if (readyState === 2) {
+                    console.log('SSE 连接已关闭');
+                } else if (readyState === 1) {
+                    console.log('SSE 连接正常');
+                } else {
+                    document.getElementById('loadingStatus').textContent = '连接服务器失败，请刷新页面重试';
+                    eventSource.close();
+                }
             };
+        } else {
+            console.log('已有批改结果，不需要 SSE 连接');
         }
     </script>
 </body>
