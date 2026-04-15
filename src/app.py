@@ -241,7 +241,7 @@ queue_thread.start()
 
 def get_db_connection():
     """获取数据库连接"""
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect('../data/database.db')
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -660,7 +660,7 @@ def api_queue_status():
 
 if __name__ == '__main__':
     # 初始化数据库
-    if not os.path.exists('database.db'):
+    if not os.path.exists('../data/database.db'):
         import database
         database.init_database()
     

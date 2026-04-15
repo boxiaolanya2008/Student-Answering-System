@@ -29,7 +29,7 @@ echo.
 
 :: 初始化数据库
 echo [3/4] 初始化数据库...
-python database.py
+python src/database.py
 if errorlevel 1 (
     echo [警告] 数据库可能已存在，继续启动...
 )
@@ -47,6 +47,6 @@ echo.
 echo 按 Ctrl+C 可停止服务器
 echo.
 
-python app.py
+python run.py
 
 pause

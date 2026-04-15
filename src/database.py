@@ -7,7 +7,7 @@ from datetime import datetime
 
 def init_database():
     """初始化数据库，创建表结构并插入示例数据"""
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect('../data/database.db')
     cursor = conn.cursor()
     
     # 创建学生表

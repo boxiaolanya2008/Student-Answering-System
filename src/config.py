@@ -10,10 +10,10 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here-change-in-production'
 DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
 # 数据库配置
-DATABASE = 'database.db'
+DATABASE = '../data/database.db'
 
 # 上传文件配置
-UPLOAD_FOLDER = 'uploads'
+UPLOAD_FOLDER = '../uploads'
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 最大上传大小 16MB
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
